@@ -1,6 +1,6 @@
 # 02 — Architecture and stack
 
-First implementation baseline: **2026-11-03**. The initial studio and backend are implemented for testing. Guided demo generation is available in code; real-model evaluation, cloud draft storage, and public lesson publishing remain future work. Current deployment and verification status belongs in [04 — Progress](04-progress.md).
+Updated: **2026-11-03**. The studio now includes creator access and a protected live-generation implementation. The public guided demo stays available. Hosted credentials and actual model evaluation remain activation gates; cloud draft storage and public publishing are later work. Current deployment and verification status belongs in [04 — Progress](04-progress.md).
 
 ## 1. Technology choices
 
@@ -11,10 +11,12 @@ First implementation baseline: **2026-11-03**. The initial studio and backend ar
 | Styling | Tailwind CSS 4.3.4 | One consistent, responsive design with visible interaction states. |
 | Visuals | React + SVG | The first scene uses a responsive SVG zone diagram. Recharts remains an option when later plotted charts justify it; it is not installed. |
 | Backend | Node.js 24.22.1 + Express 5.3.0 | Separate API repository and deployment; familiar request/response service. Both repos target Node 24. |
-| AI integration | Vercel AI SDK 7.0.162 with a server-side adapter | `AI_MODE=demo` uses prepared teaching content and editing rules. An optional AI Gateway live adapter exists but is unconfigured and unevaluated. |
+| AI integration | Vercel AI SDK 7.0.162 with a server-side AI Gateway adapter | Every request explicitly selects guided demo or live AI. Live requires the owner session, persistent allowance, and configured credentials. Actual model evaluation is still pending. |
+| Creator access | Better Auth 1.7.15 + MongoDB adapter 1.7.15 | One owner, email/password sign-in, HttpOnly sessions, no public signup and no external authentication subscription. |
 | Content validation | Canonical JSON Schema + dependency-free semantic validator | The shared validator runs in both applications. Backend tests use Ajv 8.20.0 to check schema compatibility and parity cases. |
 | Initial storage | IndexedDB through a small storage adapter | Local drafts and revisions; explicit JSON export/import for portability. Browser storage is not a cross-device backup. |
-| Later storage | MongoDB + Mongoose | Introduce for hosted, durable creator saves or publication. No database is required for the first visual/conversation prototype. |
+| Owner/usage storage | MongoDB Atlas Free + native driver 7.8.0 | Separate Endurance Canvas cluster for sessions, the owner credential, rate limits, and transactional AI allowances. No Mongoose layer is needed for this small model. |
+| Later lesson storage | MongoDB | Cloud drafts and published revisions are separate future features. Creating the auth database does not make local lessons sync across devices. |
 | Verification | Node's built-in `node:test`; browser checks for the user flow | Backend tests cover boundaries, contracts, protected routes, and failure handling. Record browser and deployed-flow evidence separately in Progress. |
 | Testing hosting | Frontend on Vercel; Express API on Render's free instance | Milan selected these hosting platforms for testing. The Vercel project is connected; Render has a dedicated backend service. |
 | Package management | npm with exact dependency versions and lockfiles | The implementation pins its packages and Node runtime. Update versions deliberately and verify the resulting builds. |
@@ -23,12 +25,12 @@ Check the installed version's documentation before changing framework or SDK cal
 
 ## 2. Responsibilities and request flow
 
-The frontend owns conversation presentation, the editable preview, local storage, and file exports. The backend owns generation rules, request validation, evidence selection, and the canonical lesson contract. Later it owns durable records and published revisions.
+The frontend owns conversation presentation, the editable preview, local storage, and file exports. The backend owns owner sessions, AI allowances, generation rules, evidence selection, and the canonical lesson contract. Later it owns durable drafts and published revisions.
 
 1. The studio sends a creation or refinement request to a thin Next.js server route.
 2. That route forwards it to Express. Business rules and model calls stay in Express.
-3. In the testing release, Express's guided demo adapter creates or revises a lesson using prepared content and supported editing rules. It makes no model call and labels its response accordingly.
-4. Express checks the candidate's structure, parameters, registered component type, and evidence references. The optional live adapter would instead request schema-constrained model output using the same evidence catalogue; the frontend currently blocks that live mode.
+3. Guided demo uses prepared content without a model call. Live AI verifies the owner session in MongoDB, then reserves the request ID and daily/monthly allowance in a transaction before contacting AI Gateway.
+4. The live adapter requests structured data using the same evidence catalogue. Both paths check structure, parameters, registered component type, and evidence references. Unsupported questions and invalid output preserve the current lesson.
 5. The studio shows the validated candidate. Accepting it makes a new local draft revision and preserves the previous one for undo.
 6. Moving a visual slider updates React/SVG locally. It makes no model request.
 
@@ -85,31 +87,47 @@ Evidence catalogue versions are immutable. Version 1 is implemented; an unavaila
 
 ## 4. API: implemented routes and later extensions
 
-The first three routes are implemented. Durable-save routes remain planned and are not available in the current API.
+Owner routes and generation are implemented. Durable-save routes remain planned and are not available in the current API.
 
 | Method and route | Purpose | Status |
 | --- | --- | --- |
 | `GET /health` | Public health, service version, and `demo`/`live` mode; no secrets | Implemented |
 | `GET /api/v1/catalog` | Protected catalogue/schema response; optional `version=1` | Implemented |
-| `POST /api/v1/generations` | Protected create/refine candidate; does not save or publish | Implemented with guided demo; live adapter not evaluated |
+| `POST /api/v1/generations` | Create/refine candidate; live additionally requires an owner session and quota reservation | Implemented; actual model evaluation pending |
+| `GET /api/v1/creator` | Session and AI availability; usage counts only for the signed-in owner | Implemented |
+| `POST /api/v1/creator/setup` | One-time, expiring-token owner setup | Implemented; closes permanently once the owner exists |
+| `POST /api/auth/sign-in/email` | Password sign-in and HttpOnly session cookie | Implemented |
+| `POST /api/auth/sign-out` | Revoke the session and clear its cookie | Implemented |
+| `POST /api/auth/change-password` | Change password with the current password | Implemented |
+| `GET /api/auth/get-session` | Read/renew the authenticated session | Implemented |
 | `POST /api/v1/explanations` | Create a durable draft | Planned M4 |
 | `GET /api/v1/explanations` | List the creator's durable drafts | Planned M4 |
 | `GET /api/v1/explanations/:id` | Reopen a durable draft | Planned M4 |
 | `PUT /api/v1/explanations/:id` | Save with `expectedRevision`; conflict returns 409 | Planned M4 |
 | `DELETE /api/v1/explanations/:id` | Delete the owned draft and its revisions | Planned M4 |
 
-Generation input contains `mode` (`create` or `refine`), `prompt`, an optional `requestId`, and, for refinement, `currentContent` plus an optional `baseRevision`. Success returns `status: "ok"`, request/base revision, response `mode`, validated `content`, and a message identifying guided demo use. An unsupported topic returns `status: "unsupported"`, an explanation, and supported lesson types. It does not masquerade as a successful answer to another question.
+Generation input contains `mode` (`create` or `refine`), `generationMode` (`demo` or `live`, default `demo`), `prompt`, an optional `requestId`, and, for refinement, `currentContent` plus an optional `baseRevision`. Success returns `status: "ok"`, request/base revision, response `mode`, validated `content`, and a message identifying the generation method. An unsupported topic returns `status: "unsupported"`, an explanation, and supported lesson types. Reusing a live request ID returns 409 without another provider call, including after a process restart.
 
 Errors use `status: "error"` with an `error` object containing `code`, `message`, and `requestId`. The API distinguishes malformed requests, invalid content, throttling, provider failure, and timeout. The frontend checks request IDs and base revisions before applying candidates. Durable ownership metadata will be server-derived when cloud storage is introduced.
 
 ## 5. Configuration and hosting boundary
 
-Current server-only variables include `BACKEND_API_URL` and `BACKEND_SERVICE_TOKEN` on Next.js, and `AI_MODE=demo`, `BACKEND_SERVICE_TOKEN`, and generation limits on Express. `AI_MODEL_ID` and `AI_GATEWAY_API_KEY` are optional live-adapter settings and are not configured. Safe example env files are included. Owner-session configuration and `MONGODB_URI` remain later work.
+Next.js holds `BACKEND_API_URL`, `BACKEND_SERVICE_TOKEN`, and the canonical `STUDIO_ORIGIN`. Express additionally accepts `MONGODB_URI`, `MONGODB_DATABASE`, `AUTH_SECRET`, the hashed expiring owner-setup token, `AI_MODE`, `AI_MODEL_ID`, `AI_GATEWAY_API_KEY`, and request limits. The repositories contain safe example env files; secret values belong only in hosting settings. See [06 — Creator and AI activation](06-creator-and-ai-activation.md) for the exact operational sequence and current blockers.
 
-AI Gateway supports API-key authentication from external servers such as Render; see its [authentication documentation](https://vercel.com/docs/ai-gateway/authentication-and-byok). Select and evaluate a current model before completing the live-AI milestone. The testing studio explicitly refuses live generation until owner-access protection is implemented.
+AI Gateway supports API-key authentication from external servers such as Render; see its [authentication documentation](https://vercel.com/docs/ai-gateway/authentication-and-byok). The current evaluation candidate is `google/gemini-3.5-flash-lite`, verified in the live model catalogue on 2026-11-03. A model ID is not evidence that the account has credits or that its output quality has passed. The app fails closed for live generation whenever owner storage or provider configuration is unavailable.
 
-Local backend development binds to localhost. Production binds to `0.0.0.0` and Render's `PORT`; startup requires a service token of at least 32 characters. Both catalogue and generation endpoints verify that token, and the frontend proxy keeps it server-side. Vercel's default SSO/deployment-protection configuration is retained; this is not a substitute for the planned application owner access required before live AI. Secrets must not use the browser-exposed `NEXT_PUBLIC_` prefix; see [Next.js environment variables](https://nextjs.org/docs/app/guides/environment-variables).
+Local backend development binds to localhost. Production binds to `0.0.0.0` and Render's `PORT`; startup requires a service token of at least 32 characters. All `/api` endpoints verify that token, and the Next proxy replaces incoming authorization with its own credential. Vercel's default deployment protection is retained separately from application owner access. Secrets must not use the browser-exposed `NEXT_PUBLIC_` prefix; see [Next.js environment variables](https://nextjs.org/docs/app/guides/environment-variables).
 
-The Render test backend is live at [endurance-canva-backend.onrender.com](https://endurance-canva-backend.onrender.com), running source revision [5790a29](https://github.com/mkmilan/endurance-canva-backend/commit/5790a2901212591a293313984f81058133cf8d17). Deployment checks confirmed `/health` returns HTTP 200 in demo mode, and unauthenticated catalogue and generation requests return HTTP 401. These checks establish backend health and its access boundary; frontend deployment and end-to-end behaviour are recorded separately in [Progress](04-progress.md). Atlas access has been confirmed, but no project database has been provisioned or integrated for this app.
+The Render test backend is at [endurance-canva-backend.onrender.com](https://endurance-canva-backend.onrender.com). Current deployment revisions and checks belong in [Progress](04-progress.md). A dedicated Atlas Free cluster now exists in AWS Frankfurt. The database-user creation was refused by the Atlas connector for lack of confirmation, so hosted owner storage is not yet connected.
 
-M4 introduces persistence and access together. Use a separate project database/collections, server-assigned ownership, revision checks, and deletion of the creator's stored drafts. Keep draft content separate from the immutable approved revision used by later public pages.
+## 6. Owner sessions and persistent allowances
+
+Better Auth runs on Render, backed by MongoDB. The browser calls same-origin Next routes; the proxy forwards cookies and every `Set-Cookie` header. The backend trusts one configured frontend origin. Unused auth endpoints, including public signup, are blocked in both services. Passwords are handled by Better Auth, with a 12-character minimum. Production session cookies are host-only, HttpOnly, Secure, and SameSite=Lax; paid requests verify the session in the database without a cookie cache.
+
+Setup uses a private signup instance that is never exposed over HTTP. A random expiring setup token is hashed in configuration and delivered through a URL fragment, which the page immediately removes. The MongoDB unique owner index and transactional signup allow one owner even under concurrent requests. Setup failure before commit permits a retry; an existing owner closes setup. Email is a sign-in identifier; email verification and email recovery are not configured.
+
+The default live allowance is **20 attempts per UTC day and 200 per UTC month**. A transaction reserves both counters and a unique owner/request ID before generation. Failed, timed-out, cancelled, and unsupported provider attempts remain counted because they may incur cost. These are request allowances, not exact monetary caps. A separate Gateway key budget can add a provider-side spend control when that credential is created.
+
+Usage records contain request IDs, a hash of inputs, timestamps, status, and available token/provider identifiers. They do not store raw prompts, generated lessons, or passwords. Request identifiers remain recorded for idempotency. Auth records and usage persist across Render restarts; local lessons remain in IndexedDB.
+
+References: [Better Auth Express integration](https://better-auth.com/docs/integrations/express), [MongoDB adapter and transactions](https://better-auth.com/docs/adapters/mongo), [cookies](https://better-auth.com/docs/concepts/cookies), and [rate limits](https://better-auth.com/docs/concepts/rate-limit).

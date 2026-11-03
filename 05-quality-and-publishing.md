@@ -18,7 +18,7 @@ Imported JSON also starts unreviewed. Local review metadata helps the creator ke
 
 ## 2. Verification that matters
 
-The initial backend passed **18 `node:test` tests**, plus syntax and whitespace checks. Tests cover the canonical fixture, schema/semantic parity, exact boundaries, malformed content, protected routes, guided creation/refinement, unsupported questions, request/rate limits, provider errors, and timeouts. Ajv validates the JSON-schema side of the contract tests; a shared dependency-free semantic validator runs in the applications. These tests do not demonstrate live-model quality or a working remote deployment.
+The original backend verification covered the canonical fixture, schema/semantic parity, exact boundaries, malformed content, protected routes, guided creation/refinement, rate limits, errors, and timeouts. The creator release adds tests against the installed AI SDK and real MongoDB transactions for owner setup, sessions, request allowances, and duplicate IDs. Ajv checks schema compatibility; the shared semantic validator also runs in both applications. Exact current counts and results belong in [Progress](04-progress.md). Fixture tests do not demonstrate actual model quality or hosted credential connectivity.
 
 The table below remains the acceptance checklist for the relevant implementation stage. Mark an item complete only when its own evidence is recorded; future cloud/publication checks are not claimed as passed.
 
@@ -36,6 +36,10 @@ The table below remains the acceptance checklist for the relevant implementation
 | Mobile and keyboard | 360 px viewport, touch controls, keyboard focus, non-colour labels | No horizontal overflow; controls and feedback remain usable |
 | Image export | One fixed export format, long title, source footer | Downloaded PNG is readable, correctly sized, and not clipped |
 | Hosted access | Unauthenticated requests to frontend and direct backend URLs | Creator operations and paid generation are protected |
+| Owner setup | Invalid/expired token, simultaneous valid requests, repeated setup after success | At most one owner; ordinary signup remains unavailable |
+| Session | Reload, password change, sign-out and revoked-cookie reuse | Signed-in session persists correctly; revoked sessions cannot generate |
+| Persistent allowance | Parallel requests, duplicate IDs, restart, UTC day/month rollover | Both counters reserve atomically; no duplicate provider call or quota overspend |
+| Proxy | Foreign origin, preview host, multiple cookies, untrusted IP header | Canonical owner access only; cookies preserved; service credentials stay server-side |
 | Future cloud saves | Concurrent edits with an old expected revision | Explicit conflict instead of a silent overwrite |
 | Future publication | Edit a published lesson's draft | Published approved revision does not change until explicitly replaced |
 
@@ -43,19 +47,21 @@ Extend the existing `node:test` suites for meaningful persistence/revision and c
 
 ## 3. AI use and operating limits
 
-The testing configuration uses **`AI_MODE=demo`**: prepared teaching content and supported editing rules, clearly labelled “Guided demo.” It makes no model calls. The backend includes an optional live adapter using AI SDK 7.0.162 and AI Gateway, but no model/key has been configured or real-model evaluation completed. The frontend also blocks forwarding generation when the backend reports live mode. Select the live model and check current pricing only when owner access and evaluation are ready.
+Guided demo remains the default selected mode and makes no model calls. The creator can explicitly select Live AI only when an owner session and provider connection are available. AI suggestions are labelled, remain unreviewed, and must be accepted before replacing a local draft. The current provider candidate is `google/gemini-3.5-flash-lite`; no actual model evaluation has been completed. AI SDK fixture tests must always be reported separately from real inference.
 
-The implemented backend bounds JSON request size (32 KiB), prompt length (4000 characters), generation time, simultaneous requests, and total attempts per minute. Defaults are 25 seconds, two simultaneous generations, and 12 attempts per minute. The optional live adapter limits output and sets SDK retries to zero. These counters are global to one process and reset on restart; they are not persistent daily quotas or exact spending caps. Add persistent accounting and an explicit budget before broader live-AI use.
+The backend bounds JSON request size (32 KiB), prompt length (4000 characters), generation time, simultaneous requests, and attempts per minute. Defaults remain 25 seconds, two simultaneous generations, and 12 attempts per minute. These immediate limits are process-local. MongoDB adds a durable reservation of **20 live attempts per UTC day and 200 per UTC month**, with unique request IDs and atomic day/month charging. Attempts remain counted after a timeout, cancellation, unsupported answer, or provider failure. A duplicate ID never starts another provider request. These request allowances do not establish an exact currency cap.
+
+The live adapter limits output to 2,500 tokens and sets SDK retries to zero. Gateway's default provider routing may still choose a fallback provider; no alternate model fallback is configured. A dedicated Gateway key budget is a separate activation step. Gateway describes its spend budgets as soft caps: the request crossing the budget can finish. See [Gateway budgets](https://vercel.com/docs/ai-gateway/observability-and-spend/budgets).
 
 Sliders, reopening drafts, saving, and exporting should work without an AI request. A configured model/provider failure must preserve local work. Logs should capture request IDs, timings, validation/error codes, and usage without storing secret keys or full prompt contents by default.
 
 ## 4. Testing hosting and the later owner checkpoint
 
-Milan selected Vercel for frontend testing and Render for the backend. The frontend project is connected with its default deployment-protection/SSO configuration retained. The Render free backend is live, with successful health and unauthenticated-access checks recorded in Architecture and Progress. This testing release is configured for guided demo use through the studio; M4's owner-login and durable-storage requirements remain future work. Record the frontend deployment outcome and effective access behaviour separately in Progress.
+Milan selected Vercel for frontend testing and Render for the backend. Both GitHub-linked deployments remain in place, with Vercel's default deployment protection retained separately from the new application authentication. Public demo behavior is preserved when owner storage or AI configuration is unavailable. Deployment checks and exact active features belong in Progress.
 
-The backend's `/api` routes now require a server-only service token in production. Its public `/health` response contains only health/version/mode information. The frontend proxy keeps the token out of browser code. Before enabling live generation, implement and verify creator access on the frontend as well; backend service authentication alone is not end-user authentication.
+The backend's `/api` routes require a server-only service token in production. Its public `/health` response contains only health/version/mode information. The frontend proxy keeps the token out of browser code. Live generation additionally reads the owner session from MongoDB, checks the exact studio origin and reserves usage before calling the provider. Do not mistake service authentication or a mode-selection button for end-user authorization.
 
-Cloud saving remains future work. Atlas access has been confirmed, but no Endurance Canvas database has been provisioned or integrated. Introduce MongoDB/Mongoose with server-assigned ownership, revision conflicts, export/recovery behaviour, and dependable deletion when durable drafts are needed. Keep all provider and database credentials server-side.
+Cloud lesson saving remains future work. The dedicated Atlas Free cluster is provisioned; its first use is owner/session/usage storage, pending database-user confirmation and network configuration. Stored usage metadata excludes raw prompts and lessons. Later draft storage needs server-assigned ownership, revision conflicts, export/recovery, and dependable deletion. Keep all provider and database credentials server-side.
 
 ## 5. Public learning pages — M5
 

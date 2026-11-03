@@ -1,6 +1,6 @@
 # Features and build plan
 
-Updated: 2026-11-03. The first guided-demo studio is implemented and deployed for testing. Check a task only after its implementation and relevant verification are complete; record evidence and milestone status in [04-progress.md](04-progress.md). Demo responses do not complete the real-model gate in M2.
+Updated: 2026-11-03. The guided-demo studio and owner-access implementation are deployed for testing. Check a task only after its implementation and relevant verification are complete; record evidence and milestone status in [04-progress.md](04-progress.md). Demo responses do not complete the real-model gate in M2.
 
 The feature checklists live here. The progress document owns the milestone summary and current next action, avoiding competing status lists.
 
@@ -31,7 +31,7 @@ This milestone proves the renderer and contract. Keep it short enough that the c
 - [x] **M2.4** Reject invalid specifications, unknown source IDs and unsupported component types. Preserve the current lesson on failure and explain what happened.
 - [x] **M2.5** Handle unsupported topics honestly, show progress, prevent accidental duplicate submissions and let the user retry a failed request.
 
-**Current state:** the guided-demo create/refine path works locally and on the testing deployment. The real-provider tasks M2.2 and M2.3 stay open until actual model outputs are evaluated.
+**Current state:** the guided-demo create/refine path works. The live adapter now accepts natural creation/refinement requests, uses a validated supported/unsupported response, and has SDK-level fixture tests. Seven real-model evaluation cases are prepared. The real-provider tasks M2.2 and M2.3 stay open until a credential is connected and actual model outputs are evaluated.
 
 **Gate — first product proof:** “Explain three training zones to a beginner cyclist” produces a valid lesson through a real model call. “Make it simpler and explain what happens at LT1” makes a meaningful revision. The selected model passes representative creation and refinement examples. Timeout and invalid-output checks leave the previous draft usable. Scientific claims still require review; schema validation is not scientific verification.
 
@@ -50,12 +50,12 @@ This milestone proves the renderer and contract. Keep it short enough that the c
 
 ## M4 — Optional hosted owner studio
 
-- [ ] **M4.1** Protect both the frontend and backend for owner access before exposing creator functions.
-- [ ] **M4.2** Add request limits, budget controls, configured origins, production errors and minimal operational logging.
-- [ ] **M4.3** Add MongoDB/Mongoose for durable drafts and revisions if cross-device saving is needed; document retention, export and recovery behaviour.
-- [ ] **M4.4** Verify save/reopen and AI generation in the hosted environment, including rejection of unauthorised requests.
+- [x] **M4.1** Verify one-owner setup, sign-in/out, password change and server-enforced live-generation access against a real database in CI; keep the demo and local editor open. Hosted activation is recorded separately in M4.4.
+- [x] **M4.2** Verify persistent daily/monthly request allowances, idempotency, configured origins, safe errors and minimal usage metadata. A separate Gateway key and spend budget remain activation tasks.
+- [ ] **M4.3** Add MongoDB for durable drafts and revisions if cross-device saving is needed; document retention, export and recovery behaviour.
+- [ ] **M4.4** Verify save/reopen and AI generation in the hosted environment, including rejection of unauthorised requests, and configure a dedicated Gateway key with an appropriate spend budget.
 
-**Current state:** Vercel/Render test hosting, backend service authentication, request limits, and same-origin checks are implemented. Application owner access, persistent model budgets, and cloud drafts remain open.
+**Current state:** owner access and persistent attempt allowances passed CI verification, including real MongoDB transactions and browser flows. A dedicated Atlas Free cluster exists, but hosted activation still requires an approved database user, network access configuration, and the AI Gateway credential. Cloud drafts are a separate future task. See [Activation](06-creator-and-ai-activation.md).
 
 **Gate:** the owner completes the creation flow; unauthorised callers cannot read drafts, modify lessons or use the paid AI endpoint. Hosting and model choices are recorded before deployment.
 

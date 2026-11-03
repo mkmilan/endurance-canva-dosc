@@ -1,0 +1,125 @@
+{
+  "status": "passed",
+  "passed": true,
+  "startedAt": "2026-11-03T18:06:34.406Z",
+  "frontendCommit": "68ecb558198f287b6b51afb5a01a00c770b88d25",
+  "backendCommit": "259760be5e75e4690765d679085933de181561ba",
+  "baseUrl": "http://127.0.0.1:3000",
+  "checks": [
+    {
+      "name": "Launch bundled Chromium and connect the guided-demo studio",
+      "status": "passed",
+      "durationMs": 1379
+    },
+    {
+      "name": "Exact LT1/LT2 boundaries, keyboard input, and temporary viewer state",
+      "status": "passed",
+      "durationMs": 987
+    },
+    {
+      "name": "Guided creation-style request and refinement through the real proxy",
+      "status": "passed",
+      "durationMs": 285
+    },
+    {
+      "name": "Unsupported requests preserve the authored lesson",
+      "status": "passed",
+      "durationMs": 97
+    },
+    {
+      "name": "Immediate lesson switching preserves an edit, then reload restores it",
+      "status": "passed",
+      "durationMs": 2034
+    },
+    {
+      "name": "Review is local to a revision; JSON round trip starts unreviewed",
+      "status": "passed",
+      "durationMs": 257
+    },
+    {
+      "name": "Invalid JSON import keeps the current lesson intact",
+      "status": "passed",
+      "durationMs": 87
+    },
+    {
+      "name": "Duplicate creates a separate draft and Undo restores its content",
+      "status": "passed",
+      "durationMs": 218
+    },
+    {
+      "name": "PNG export downloads a nonempty 1080 × 1350 image",
+      "status": "passed",
+      "durationMs": 114
+    },
+    {
+      "name": "Opening creator access immediately after an edit flushes the local draft",
+      "status": "passed",
+      "durationMs": 1131
+    },
+    {
+      "name": "Guests cannot register publicly or request live generation",
+      "status": "passed",
+      "durationMs": 21
+    },
+    {
+      "name": "One-time owner setup clears its token from the URL and creates a sign-in account",
+      "status": "passed",
+      "durationMs": 318
+    },
+    {
+      "name": "Creator signs in with an HttpOnly session that survives reload",
+      "status": "passed",
+      "durationMs": 1217
+    },
+    {
+      "name": "Live AI is explicit, labelled, and offers a candidate without changing the saved lesson",
+      "status": "passed",
+      "durationMs": 276
+    },
+    {
+      "name": "Duplicate IDs, foreign origins, and exhausted quota cannot make extra AI attempts",
+      "status": "passed",
+      "durationMs": 430
+    },
+    {
+      "name": "Password change and sign-out work through the same-origin auth proxy",
+      "status": "passed",
+      "durationMs": 1585
+    },
+    {
+      "name": "360 px canvas and conversation stay usable without horizontal overflow",
+      "status": "passed",
+      "durationMs": 197
+    },
+    {
+      "name": "No uncaught browser errors",
+      "status": "passed",
+      "durationMs": 0
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "artifacts": [
+    "backend-tests.log",
+    "backend.log",
+    "browser-trace.zip",
+    "conversation-mobile.png",
+    "creator-mobile.png",
+    "creator-signed-in.png",
+    "frontend-build.log",
+    "frontend-tests.log",
+    "frontend.log",
+    "lesson-export.png",
+    "lesson-roundtrip.json",
+    "report.json",
+    "studio-desktop.png",
+    "studio-live-fixture.png",
+    "studio-mobile.png",
+    "studio-suggestion.png"
+  ],
+  "scope": "Production frontend build, pinned backend, and isolated MongoDB replica set in CI. Real owner setup, password/session checks, and durable quotas. Live AI responses are explicitly labelled test fixtures; no real model calls or hosted-deployment assertions.",
+  "visualReview": "Screenshots and the exported PNG are evidence for human visual review; automated checks do not establish typography or scientific quality.",
+  "playwrightVersion": "1.62.1",
+  "initialTitle": "A clearer picture of training intensity",
+  "finishedAt": "2026-11-03T18:06:45.669Z"
+}
