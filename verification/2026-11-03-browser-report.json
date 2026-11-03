@@ -1,0 +1,86 @@
+{
+  "status": "passed",
+  "passed": true,
+  "startedAt": "2026-11-03T17:14:44.700Z",
+  "frontendCommit": "a3e182ac8ff9182bf39ca0c3cd2ccbd27e7405c9",
+  "backendCommit": "5790a2901212591a293313984f81058133cf8d17",
+  "baseUrl": "http://127.0.0.1:3000",
+  "checks": [
+    {
+      "name": "Launch bundled Chromium and connect the guided-demo studio",
+      "status": "passed",
+      "durationMs": 1550
+    },
+    {
+      "name": "Exact LT1/LT2 boundaries, keyboard input, and temporary viewer state",
+      "status": "passed",
+      "durationMs": 1024
+    },
+    {
+      "name": "Guided creation-style request and refinement through the real proxy",
+      "status": "passed",
+      "durationMs": 331
+    },
+    {
+      "name": "Unsupported requests preserve the authored lesson",
+      "status": "passed",
+      "durationMs": 130
+    },
+    {
+      "name": "Immediate lesson switching preserves an edit, then reload restores it",
+      "status": "passed",
+      "durationMs": 2085
+    },
+    {
+      "name": "Review is local to a revision; JSON round trip starts unreviewed",
+      "status": "passed",
+      "durationMs": 280
+    },
+    {
+      "name": "Invalid JSON import keeps the current lesson intact",
+      "status": "passed",
+      "durationMs": 96
+    },
+    {
+      "name": "Duplicate creates a separate draft and Undo restores its content",
+      "status": "passed",
+      "durationMs": 215
+    },
+    {
+      "name": "PNG export downloads a nonempty 1080 × 1350 image",
+      "status": "passed",
+      "durationMs": 139
+    },
+    {
+      "name": "360 px canvas and conversation stay usable without horizontal overflow",
+      "status": "passed",
+      "durationMs": 236
+    },
+    {
+      "name": "No uncaught browser errors",
+      "status": "passed",
+      "durationMs": 0
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "artifacts": [
+    "backend.log",
+    "browser-trace.zip",
+    "conversation-mobile.png",
+    "frontend-build.log",
+    "frontend-tests.log",
+    "frontend.log",
+    "lesson-export.png",
+    "lesson-roundtrip.json",
+    "report.json",
+    "studio-desktop.png",
+    "studio-mobile.png",
+    "studio-suggestion.png"
+  ],
+  "scope": "Production frontend build and pinned guided-demo backend running locally in CI. No real model calls or hosted-deployment assertions.",
+  "visualReview": "Screenshots and the exported PNG are evidence for human visual review; automated checks do not establish typography or scientific quality.",
+  "playwrightVersion": "1.62.1",
+  "initialTitle": "A clearer picture of training intensity",
+  "finishedAt": "2026-11-03T17:14:51.128Z"
+}

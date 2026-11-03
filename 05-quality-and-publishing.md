@@ -1,6 +1,6 @@
 # 05 — Quality, verification, and later publishing
 
-Planning baseline: **2026-11-03**. These are focused product requirements for the relevant milestones. They are not completed application checks or a legal-policy package.
+First implementation baseline: **2026-11-03**. This document separates checks already performed on the initial backend from acceptance requirements for the studio and later releases. The current deployment and browser-verification record is maintained in [04 — Progress](04-progress.md).
 
 ## 1. Scientific quality
 
@@ -8,15 +8,19 @@ Each interactive lesson must separate supplied example inputs, deterministic dis
 
 For the first scene, 180 W and 240 W are fictional thresholds. The app does not calculate a person's LT1/LT2, infer a lactate curve, equate a fixed lactate concentration with a universal threshold, or predict training adaptations. Changing those inputs demonstrates the chosen boundaries.
 
-Maintain a small versioned evidence catalogue. Each entry records a source ID, title, authors/year, DOI or canonical URL, the particular claim it supports, qualifications, and review state. Each claim has its own ID and references. A valid citation ID alone does not establish that a statement is supported: review the relationship between the claim and the source. The backend supplies relevant approved claim cards to the model, and resolves their references to trusted metadata.
+A small versioned evidence catalogue is implemented in the backend's `contracts/catalog.v1.json` and synced to the frontend. Source entries record identity, bibliographic metadata, the particular claim supported, qualifications, and review state; claim cards have their own IDs. A valid citation ID alone does not establish that a statement is supported. Guided demo content uses these fixed cards. The optional live adapter supplies the same catalogue to the model, but its outputs still require review.
 
-One starting reference is [Seiler and Kjerland (2006), Quantifying training intensity distribution in elite endurance athletes](https://pubmed.ncbi.nlm.nih.gov/16430681/). The study delineated three zones with **ventilatory thresholds**. It can inform the three-zone teaching framework; it does not validate the fictional wattages, a particular lactate-threshold algorithm, or a claim that ventilatory and lactate thresholds are interchangeable. Review appropriate lactate-specific material before approving LT1/LT2 explanatory claims. Scientific content review is an open M1 task.
+The first reference is [Seiler and Kjerland (2006), Quantifying training intensity distribution in elite endurance athletes](https://pubmed.ncbi.nlm.nih.gov/16430681/). The study delineated three zones with **ventilatory thresholds**. That limited claim and its qualification were checked for the first catalogue; the source does not validate the fictional wattages, a lactate-threshold algorithm, or equivalence between ventilatory and lactate thresholds. The demonstration explains supplied boundaries using an explicit display rule. Broader physiological LT1/LT2 teaching claims need appropriate evidence before they are added or approved for publication.
 
 AI and manual edits create draft revisions. A creator can review a specific revision after checking its claims, assumptions, labels, and source links. Any later content change requires a new review. An illustrative source-free draft is acceptable during development, but cannot be treated as ready for public publication.
 
 Imported JSON also starts unreviewed. Local review metadata helps the creator keep track; when publication is implemented, the server must record approval of the exact stored revision rather than trusting a review flag supplied in a file or model response.
 
 ## 2. Verification that matters
+
+The initial backend passed **18 `node:test` tests**, plus syntax and whitespace checks. Tests cover the canonical fixture, schema/semantic parity, exact boundaries, malformed content, protected routes, guided creation/refinement, unsupported questions, request/rate limits, provider errors, and timeouts. Ajv validates the JSON-schema side of the contract tests; a shared dependency-free semantic validator runs in the applications. These tests do not demonstrate live-model quality or a working remote deployment.
+
+The table below remains the acceptance checklist for the relevant implementation stage. Mark an item complete only when its own evidence is recorded; future cloud/publication checks are not claimed as passed.
 
 | Area | Check | Passing behaviour |
 | --- | --- | --- |
@@ -35,21 +39,23 @@ Imported JSON also starts unreviewed. Local review metadata helps the creator ke
 | Future cloud saves | Concurrent edits with an old expected revision | Explicit conflict instead of a silent overwrite |
 | Future publication | Edit a published lesson's draft | Published approved revision does not change until explicitly replaced |
 
-Add automated tests for calculation boundaries, contracts, persistence/revision failures, and the core browser flow as those features are built. Use a small labelled evaluation set for AI generation; structural validity is not a scientific quality score. Inspect the first exported image visually. Documentation-only commits require link/format checks, not a fictional application test report.
+Extend the existing `node:test` suites for meaningful persistence/revision and contract changes. Browser checks must exercise the core creation/edit/save/export flow and mobile layout. Inspect the first exported image visually. Use a small labelled evaluation set when live AI is introduced; structural validity is not a scientific quality score. Record exactly which local, browser, and deployed checks ran in Progress.
 
 ## 3. AI use and operating limits
 
-Real model calls happen only on the backend. Start with a clearly labelled mock provider; select the live model after comparing its output on the initial lesson and refinements. Recheck current provider pricing at that point. A personal chat subscription is not the app's model configuration.
+The testing configuration uses **`AI_MODE=demo`**: prepared teaching content and supported editing rules, clearly labelled “Guided demo.” It makes no model calls. The backend includes an optional live adapter using AI SDK 7.0.162 and AI Gateway, but no model/key has been configured or real-model evaluation completed. The frontend also blocks forwarding generation when the backend reports live mode. Select the live model and check current pricing only when owner access and evaluation are ready.
 
-Bound prompt/context size, output size, elapsed time, concurrent generations, and requests per creator. Configure the SDK's retry behaviour so failures cannot produce an unbounded retry loop. Retrying invalid output should be limited and visible in usage accounting. Use server-side counters; persistent counters are required for a hosted daily quota that must survive restarts. Counts control usage, but are not a guarantee of an exact monetary spend cap.
+The implemented backend bounds JSON request size (32 KiB), prompt length (4000 characters), generation time, simultaneous requests, and total attempts per minute. Defaults are 25 seconds, two simultaneous generations, and 12 attempts per minute. The optional live adapter limits output and sets SDK retries to zero. These counters are global to one process and reset on restart; they are not persistent daily quotas or exact spending caps. Add persistent accounting and an explicit budget before broader live-AI use.
 
 Sliders, reopening drafts, saving, and exporting should work without an AI request. A configured model/provider failure must preserve local work. Logs should capture request IDs, timings, validation/error codes, and usage without storing secret keys or full prompt contents by default.
 
-## 4. Hosted creator checkpoint — M4
+## 4. Testing hosting and the later owner checkpoint
 
-Before exposing the studio remotely, protect creator sessions and the separately reachable backend. Configure usage limits, HTTPS, restricted service credentials, and dependable storage. Keep gateway/database credentials server-side. Decide backup/export retention for durable drafts and verify that deletion removes the relevant stored content.
+Milan selected Vercel for frontend testing and Render for the backend. The frontend project is connected with its default deployment-protection/SSO configuration retained. The Render free backend is live, with successful health and unauthenticated-access checks recorded in Architecture and Progress. This testing release is configured for guided demo use through the studio; M4's owner-login and durable-storage requirements remain future work. Record the frontend deployment outcome and effective access behaviour separately in Progress.
 
-Use a dedicated project configuration. Confirm current hosting plans, costs, supported runtimes, and relevant service terms when choosing the deployment. No hosting subscription, model credit, database, domain, or deployment is part of this planning commit.
+The backend's `/api` routes now require a server-only service token in production. Its public `/health` response contains only health/version/mode information. The frontend proxy keeps the token out of browser code. Before enabling live generation, implement and verify creator access on the frontend as well; backend service authentication alone is not end-user authentication.
+
+Cloud saving remains future work. Atlas access has been confirmed, but no Endurance Canvas database has been provisioned or integrated. Introduce MongoDB/Mongoose with server-assigned ownership, revision conflicts, export/recovery behaviour, and dependable deletion when durable drafts are needed. Keep all provider and database credentials server-side.
 
 ## 5. Public learning pages — M5
 
