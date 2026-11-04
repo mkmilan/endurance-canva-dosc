@@ -1,6 +1,6 @@
 # Features and build plan
 
-Updated: 2026-11-03. The guided-demo studio and owner-access implementation are deployed for testing. Check a task only after its implementation and relevant verification are complete; record evidence and milestone status in [04-progress.md](04-progress.md). Demo responses do not complete the real-model gate in M2.
+Updated: 2026-11-04. The guided studio is published privately on ChatGPT Sites; identity and usage storage use Sites/D1. The previous separate-hosting design is superseded by [the migration plan](07-sites-migration.md). Check a task only after its implementation and relevant verification are complete; record evidence and milestone status in [04-progress.md](04-progress.md). Demo responses do not complete the real-model gate in M2.
 
 The feature checklists live here. The progress document owns the milestone summary and current next action, avoiding competing status lists.
 
@@ -48,16 +48,16 @@ This milestone proves the renderer and contract. Keep it short enough that the c
 
 **User checkpoint:** technical acceptance does not replace Milan trying one explanation he wants to keep.
 
-## M4 — Optional hosted owner studio
+## M4 — Private Sites creator studio
 
-- [x] **M4.1** Verify one-owner setup, sign-in/out, password change and server-enforced live-generation access against a real database in CI; keep the demo and local editor open. Hosted activation is recorded separately in M4.4.
-- [x] **M4.2** Verify persistent daily/monthly request allowances, idempotency, configured origins, safe errors and minimal usage metadata. A separate Gateway key and spend budget remain activation tasks.
-- [ ] **M4.3** Add MongoDB for durable drafts and revisions if cross-device saving is needed; document retention, export and recovery behaviour.
-- [ ] **M4.4** Verify save/reopen and AI generation in the hosted environment, including rejection of unauthorised requests, and configure a dedicated Gateway key with an appropriate spend budget.
+- [x] **M4.1** Integrate native Sites identity and an owner-private access policy; remove the unfinished separate account setup flow.
+- [x] **M4.2** Migrate persistent daily/monthly allowances and request-id deduplication to atomic D1 SQL; preserve origin checks, paid-call ordering, safe errors and minimal accounting metadata.
+- [ ] **M4.3** Add account-owned cloud lesson storage if cross-device saving is needed; the current library remains IndexedDB with complete JSON backup/restore.
+- [ ] **M4.4** Configure the Gateway secret and verify actual signed-in real-model generation in the hosted Site.
 
-**Current state:** owner access and persistent attempt allowances passed CI verification, including real MongoDB transactions and browser flows. A dedicated Atlas Free cluster exists, but hosted activation still requires provisioning the database user and network access, plus verification of the AI Gateway credential Milan reports adding to Render. Milan authorized the database work and supplied the Render CIDRs on 2026-11-04; the Atlas connector still refuses those writes. Cloud drafts are a separate future task. See [Activation](06-creator-and-ai-activation.md).
+**Current state:** Sites production D1 and guided API checks pass; native identity is configured, and unauthenticated paid requests are rejected. Fifty-four Sites tests and a production build pass. Real model access remains disabled until the existing secret is transferred. See [Activation](06-creator-and-ai-activation.md).
 
-**Gate:** the owner completes the creation flow; unauthorised callers cannot read drafts, modify lessons or use the paid AI endpoint. Hosting and model choices are recorded before deployment.
+**Migration gate:** move wanted Vercel-origin drafts using full-library backup/restore before deleting old resources. The old frontend backup feature is deployed. Other projects are outside cleanup scope.
 
 ## M5 — Approved public lessons and website connection
 

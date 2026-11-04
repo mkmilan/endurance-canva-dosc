@@ -1,102 +1,38 @@
-# 06 — Creator and AI activation
+# 06 — Sites creator and AI activation
 
-Updated **2026-11-04**. This is the operational checklist for the creator-access release. Implementation, fixture verification, hosted connectivity, and real model quality are separate gates. The deployed studio must keep identifying its actual generation method.
+Updated 4 November 2026. These steps replace the previous Atlas credential and Better Auth owner-setup procedure. The old services are retained only for migration/fallback until retirement.
 
-## Current setup
+## Current state
 
-| Resource | State |
+- Private Site: [Endurance Canvas](https://endurance-canvas.quirkychick26.chatgpt.site).
+- Project: `appgprj_6aeb52524c808191a2e601483d5f959d`.
+- Identity: native Sites sign-in; the access policy contains only Milan. No separate password, owner token or database user setup is required.
+- Storage: D1 `DB` is provisioned, the usage table exists, and the production API reports it available.
+- Guided generation and local studio features work. Lessons stay in the browser until exported; signing in does not upload them.
+- Live AI is disabled. The reported Gateway key on Render has not been copied or verified.
+
+## Runtime environment
+
+| Key | Setting |
 | --- | --- |
-| Vercel frontend | Existing `endurance-canva-frontend` project; canonical URL https://endurance-canva-frontend.vercel.app |
-| Render backend | Existing free Frankfurt service `srv-dbl0vl6c6qcc73bm1450` |
-| Atlas project | Created `endurance-canvas`, ID `6aea1c1f1c91a0b9011d4027` |
-| Atlas cluster | Created `endurance-canvas`, **Free**, AWS `EU_CENTRAL_1`; inspected MongoDB version 8.0.36 |
-| Database credential | **Not created.** Milan explicitly authorized it on 2026-11-04. The connector still refused with “User did not confirm the execution of the `atlas-create-db-user` tool so the operation was not performed.” A read-back confirmed zero database users. |
-| Database network access | **Configured and verified.** Milan added `74.220.51.0/24` (`Render1`) and `74.220.59.0/24` (`Render2`). A read-only Atlas check confirmed exactly these two entries on 2026-11-04. |
-| Gateway credential | Milan reports adding `AI_GATEWAY_API_KEY` directly to Render. A new manual deployment `dep-dbld74ajnfac73fllrig` is LIVE on the existing backend source. Key presence/validity and provider credits remain unverified; no live model request has run. |
-| Owner account | Not created; Milan will choose his own email and password using the private setup link after database connection. |
-| Actual model evaluation | **Not run.** Seven prepared cases are in the backend's `test/live-evaluation-cases.json`. |
-
-No paid Atlas cluster, paid Render instance, model-credit purchase, or automatic credit top-up was created. The other projects' data and credentials are not used by Endurance Canvas.
-
-## 1. Connect the isolated database
-
-Create the app user **`endurance-canvas-app`**, scoped to cluster **`endurance-canvas`**, with only **`readWrite` on database `endurance_canvas`**. Let Atlas's credential tool generate the password. Store the resulting connection URI directly in Render's `MONGODB_URI`; never put the value in chat, source, a test artifact, or a frontend variable.
-
-Use the new cluster's SRV connection string, append the `endurance_canvas` database, and retain TLS/default certificate verification. Encode the username/password as URI components. Keep `authSource=admin` and ordinary driver retry/write-majority options as appropriate for the Atlas connection string.
-
-The Render outbound ranges supplied by Milan on **2026-11-04** are **`74.220.51.0/24`** and **`74.220.59.0/24`**. Milan has now added these exact two CIDRs to the new Atlas project's database IP access list, and a read-only inspection verified both entries. [Atlas IP access documentation](https://www.mongodb.com/docs/atlas/security/ip-access-list/)
-
-**Remaining connector blocker:** `atlas-create-db-user` still returns “User did not confirm…” despite Milan's explicit authorization. A new attempt after the verified network change returned the same refusal, and a read-back confirmed zero users. No database URI was generated. Do not disable confirmation or route around the refusal without authorization for an alternative.
-
-The MongoDB Atlas plugin is installed and enabled. Neither it nor the inspected Plugin Management capabilities exposes a confirmation-reset or reauthorization operation. Milan has declined further manual database configuration on his phone. The candidate continuation is to use Atlas's website in the shared browser after explicit approval of that fallback, as required by the browser guidance. No Atlas website action has been performed. No Render setting or deployment was changed during this attempt.
-
-For an authorized operator using the website, the restricted app user is created under **Database & Network Access → Database Users → Add New Database User**, with only the database-specific `readWrite` privilege and the cluster restriction described above. The Connect wizard's first-user shortcut grants Atlas Admin and does not match this app role. Store the final connection URI directly in Render. [Atlas database-user documentation](https://www.mongodb.com/docs/atlas/security-add-mongodb-users/)
-
-**Diagnosis:** the [official connector implementation](https://github.com/mongodb-js/mongodb-mcp-server/blob/c9ea2a51c3a9b2c10d7fcd1dbf10b10559287fa9/packages/core/src/toolBase.ts) emits this exact refusal when its separate confirmation response is false, before running the tool operation. The response does not establish that Milan declined it or explain why confirmation failed to reach the connector. Do not disable or bypass that confirmation mechanism.
-
-Milan's screenshot now confirms that the project's **Clusters page is accessible**. The amber “Current IP Address not added” message warns about database connections from the phone's current address; it is not an Atlas dashboard lockout. Our deployed app connects from Render, so the two supplied Render CIDRs are the relevant database access entries. The [project database IP access list](https://www.mongodb.com/docs/atlas/security/ip-access-list/) is distinct from the optional organization UI list. After Milan reported changing settings, both creation operations were retried once and still failed at the connector's confirmation check. No phone-IP change is needed merely to navigate the shown Atlas page.
-
-The server reuses one MongoDB client. Its small connection pool suits a single Render instance with two simultaneous generations and a single owner. Supported network, server-selection, socket, and pool-wait timeouts bound individual phases; application-owned queries and quota commits also have server-side time limits. Driver 7.8 no longer implements the old client `timeoutMS` option, and its transaction helper can retry for up to 120 seconds. Frontend requests have their own shorter deadline; a disconnected request must not start inference after its session check. A failed initial database connection leaves the public demo available and requires restarting/redeploying the backend after configuration is corrected. Runtime database failure blocks paid work; the app never falls back to an in-memory paid quota.
-
-## 2. Configure creator access
-
-| Variable | Host | Purpose |
-| --- | --- | --- |
-| `BACKEND_API_URL` | Vercel | Existing Render service origin |
-| `BACKEND_SERVICE_TOKEN` | Both | Existing strong server-to-server credential; retain the matching value |
-| `STUDIO_ORIGIN` | Both | `https://endurance-canva-frontend.vercel.app`, exactly, with no trailing slash |
-| `MONGODB_URI` | Render only | Dedicated Atlas credential/connection URI |
-| `MONGODB_DATABASE` | Render only | `endurance_canvas` |
-| `AUTH_SECRET` | Render only | Strong random value, at least 32 characters; stable across deployments |
-| `OWNER_SETUP_TOKEN_HASH` | Render only | SHA256 of a new random setup token |
-| `OWNER_SETUP_EXPIRES_AT` | Render only | Explicit ISO timestamp, normally 48 hours after issuance |
-
-A setup token is an owner-provisioning credential. Generate it only when the database is connected and the link is ready to give Milan. Do not commit its value. The private link format is `/creator#setup=<token>`; the fragment does not reach the server in the initial request, and the page removes it from the address bar. Setup sends the token in a bounded HTTPS JSON body. The server compares its hash and expiry, then invokes Better Auth's private transactional signup.
-
-Milan chooses the account name, email, and password. The minimum password length is 12 characters. Setup does not automatically sign in; a normal sign-in verifies the credential and cookie path. The unique owner index permanently closes setup once creation commits, including concurrent requests and ambiguous network responses. A failed validation or rolled-back transaction does not consume the token.
-
-Only the canonical production origin supports owner sessions. Preview deployments continue to offer the public demo. The Next proxy allows four Better Auth endpoints, forwards cookies only on the canonical origin, preserves all returned cookies, and removes raw session-token fields from JSON responses. Auth secrets are never exposed using `NEXT_PUBLIC_*`.
-
-Password change requires the current password and revokes other sessions. Email delivery, email verification, and email password recovery are not configured; the email address is currently a sign-in identifier. Recovery after losing the password is an operator task, not a promised automatic email flow. Keep the chosen password in a password manager.
-
-## 3. Connect the model
-
-Use a dedicated Endurance Canvas **AI Gateway API key**. The current Render architecture uses external-server key authentication; a short-lived local Vercel OIDC token is not a permanent Render credential. [Gateway setup](https://vercel.com/docs/ai-gateway/getting-started) · [Key authentication](https://vercel.com/docs/ai-gateway/authentication-and-byok/api-keys)
-
-Open the [official AI Gateway API Keys shortcut](https://vercel.com/d?title=AI+Gateway+API+Keys&to=%2F%5Bteam%5D%2F~%2Fai-gateway%2Fapi-keys), choose the Vercel team holding Endurance Canvas, and click **Create key**. Use a recognizable name such as `endurance-canvas-render`. Copy the value immediately; Vercel does not display it again.
-
-Open the [Render backend](https://dashboard.render.com/web/srv-dbl0vl6c6qcc73bm1450), select **Environment → Add Environment Variable**, set the key to `AI_GATEWAY_API_KEY`, and paste the credential directly into its value field. Choose **Save and deploy** to activate the environment change without rebuilding code. Keep `AI_MODE=demo` until database/owner access is verified. [Render environment documentation](https://render.com/docs/configure-environment-variables)
-
-Do not paste credentials into chat. The current connector has no Gateway-key management operation and cannot silently export its own authentication for CLI use.
-
-| Variable | Initial value |
-| --- | --- |
-| `AI_MODEL_ID` | `google/gemini-3.5-flash-lite` |
-| `AI_MODE` | `live` after database/owner access is verified |
-| `AI_MAX_OUTPUT_TOKENS` | `2500` |
+| `AI_MODE` | `demo` until the key is configured; then `live` |
+| `AI_GATEWAY_API_KEY` | Existing dedicated Gateway credential, configured as a Sites secret |
+| `AI_MODEL_ID` | `google/gemini-3.5-flash-lite` candidate |
 | `AI_DAILY_REQUEST_LIMIT` | `20` |
 | `AI_MONTHLY_REQUEST_LIMIT` | `200` |
+| `AI_SITE_DAILY_REQUEST_LIMIT` | `20` |
+| `AI_SITE_MONTHLY_REQUEST_LIMIT` | `200` |
 
-The model ID was selected from the complete current Gateway model catalogue. Its listed standard rates on 2026-11-03 are $0.30 per million input tokens and $2.50 per million output tokens; reasoning counts toward the output allowance. These rates can change. The model supports structured output, but this project's actual response quality and latency are still unmeasured. [Model specification](https://vercel.com/ai-gateway/models/gemini-3.5-flash-lite) · [Live catalogue](https://ai-gateway.vercel.sh/v1/models)
+Runtime changes require deployment of a saved version to take effect. Preserve the Site's audience and the D1 binding. Keep keys out of chat, Git, browser bundles, local tracked files and logs. The connected Render tool can update variables but does not expose a supported secret-read operation; the Vercel frontend has no Gateway key. Do not mutate an old service just to read its response.
 
-Before making requests, check the account's existing credit balance and eligibility. Free-credit availability depends on the account and eligible model subset; do not assume the proposed model is covered. No credit purchase or automatic top-up is part of this setup. A small dedicated key budget can provide an additional spend control; choose its amount deliberately. Gateway budgets are soft caps, so the crossing request can finish. [Pricing](https://vercel.com/docs/ai-gateway/pricing) · [Budgets](https://vercel.com/docs/ai-gateway/observability-and-spend/budgets)
+## Activation and evaluation
 
-The application allowance counts attempts, not dollars: 20 per UTC day and 200 per UTC month. Counts survive deployments. It reserves both periods and the request ID atomically before inference; duplicate IDs return 409. Failed/cancelled/timed-out/unsupported attempts remain counted. Sliders, manual edits, local saves, imports, exports, and the guided demo do not consume this allowance.
+1. Configure the existing Gateway key through supported secret settings; keep the key tied to this app and preserve any provider budget settings.
+2. Set live mode and deploy the current saved version with the new environment revision.
+3. Open the Site as its owner. Verify creator identity, database availability and the daily/monthly allowance.
+4. Run a small real create/refine evaluation, then the prepared cases in the backend's `test/live-evaluation-cases.json` (also retained with the Site source). Record actual provider response, latency, schema outcome and explanation quality; do not label fixtures as real AI.
+5. Confirm rejection of unsupported requests, invalid output, duplicate IDs and over-budget attempts while preserving the previous lesson.
 
-## 4. Verify the actual hosted flow
+The limits count attempts, including failed provider calls; they are not monetary spending caps. Default generation timeout is 25 seconds, maximum output 2,500 tokens, and paid traffic is limited to 12/minute and two active requests across the Site. The aggregate allowance prevents sharing the Site from multiplying its total request budget.
 
-The [passing verification run](https://github.com/mkmilan/endurance-canva-frontend/actions/runs/41690421183) used an isolated MongoDB replica set and an explicitly labelled model fixture: 55 backend tests, 28 frontend tests, and 18 browser flows passed. The browser report is preserved in [verification/2026-11-03-creator-browser-report.json](verification/2026-11-03-creator-browser-report.json). Those tests verify account setup, cookies, sessions, quotas, and the studio interaction without spending credits. They cannot establish that Render can reach Atlas or that a real model produces useful teaching content.
-
-After activation:
-
-1. Verify hosted creator status, complete the private setup form, sign in, and reload the account page.
-2. Confirm a signed-out browser cannot request live generation or access the owner identity/usage data. Confirm direct backend requests without the service credential return 401.
-3. Sign in, explicitly select **Live AI**, and run the prepared creation and refinement cases. Confirm a valid candidate, accurate AI labelling, expected allowance changes, and preserved current content until acceptance.
-4. Review every scientific statement against the fixed source catalogue. Check boundary wording, fictional-input qualifications, supported analogies, and preservation of unrequested edits. Schema success alone does not prove correctness.
-5. Exercise unsupported, timeout, invalid-output, and duplicate-ID paths. The previous lesson must remain usable; failed requests must not silently switch to demo and claim an AI result.
-6. Inspect the Gateway request record using its generation identifier and record the actual model, latency, token usage, and cost. Do not export secret headers or raw credentials.
-7. Update Progress with the exact frontend/backend revisions and the results. Only then check off the real-model gate in M2.
-
-## 5. What remains separate
-
-Signing in does not upload existing lessons. Drafts still use IndexedDB and JSON backups. Cloud draft saving, public reviewed lesson URLs, website traffic integration, and visitor question answering remain later milestones. This release adds the access and operating controls needed to evaluate real AI within the existing first lesson type.
+Only after draft recovery and activation/retirement decisions should the exact old resources in [the migration plan](07-sites-migration.md) be deleted. Preserve source history and avoid all other apps.

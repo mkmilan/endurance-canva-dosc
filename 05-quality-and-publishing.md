@@ -1,3 +1,5 @@
+> Hosting update, 4 November 2026: the current runtime is ChatGPT Sites with native identity and D1. See [migration](07-sites-migration.md) and [current progress](04-progress.md) for release evidence; prior Vercel/Render/Mongo references below are historical. Scientific review principles remain unchanged.
+
 # 05 — Quality, verification, and later publishing
 
 First implementation baseline: **2026-11-03**. This document separates checks already performed on the initial backend from acceptance requirements for the studio and later releases. The current deployment and browser-verification record is maintained in [04 — Progress](04-progress.md).

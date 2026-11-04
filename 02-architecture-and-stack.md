@@ -1,3 +1,15 @@
+# Current architecture — ChatGPT Sites
+
+Updated 4 November 2026. The app now runs as one private Sites project: React/Vinext frontend, same-origin Worker route handlers, Sites-managed identity, and a D1 SQL ledger for AI attempts. The tested lesson schema and source catalogue remain shared by generation and rendering. Existing IndexedDB lessons remain device-local and can move through full-library JSON backup/restore.
+
+The new runtime has no Vercel API proxy, Render service-token dependency, MongoDB driver, Better Auth account setup, or raw database TCP connection. Real AI retains the server-side Gateway adapter but is disabled until its secret is transferred. The first release uses per-user and aggregate 20/day and 200/month attempt caps with atomic D1 reservation before any provider call.
+
+See [Sites migration](07-sites-migration.md) for the exact new resources, ownership boundaries, verification and retirement plan. The previous hosting remains a temporary fallback and source of browser-draft backups.
+
+## Historical architecture before this migration
+
+The document below records the earlier design. Its Vercel, Render, MongoDB and separate-owner-auth instructions are superseded by the current Sites plan.
+
 # 02 — Architecture and stack
 
 Updated: **2026-11-03**. The studio now includes creator access and a protected live-generation implementation. The public guided demo stays available. Hosted credentials and actual model evaluation remain activation gates; cloud draft storage and public publishing are later work. Current deployment and verification status belongs in [04 — Progress](04-progress.md).

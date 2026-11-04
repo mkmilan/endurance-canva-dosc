@@ -1,0 +1,61 @@
+{
+  "date": "2026-11-04",
+  "sitesTests": {
+    "passed": 54,
+    "failed": 0
+  },
+  "originalFrontendTests": {
+    "passed": 42,
+    "failed": 0
+  },
+  "productionWorkerBuild": "passed",
+  "originalFrontendBuild": "passed",
+  "d1LocalMigration": "applied",
+  "previewStatus": {
+    "status": "ok",
+    "mode": "demo",
+    "version": "0.3.0-sites",
+    "storage": {
+      "available": true
+    }
+  },
+  "browserChecks": [
+    "guided create",
+    "guided refine",
+    "accept suggestion",
+    "save",
+    "library backup download",
+    "library restore without overwrite",
+    "restored undo history",
+    "edit",
+    "save before account navigation",
+    "reload persisted revision and conversation",
+    "native account links",
+    "PNG export"
+  ],
+  "pngDimensions": [
+    1080,
+    1350
+  ],
+  "desktopViewportWidth": 1363,
+  "desktopContentWidth": 1363,
+  "appConsoleWarningsOrErrors": [],
+  "ignoredExtensionMessages": 48,
+  "mobileBrowserRun": "not run; existing responsive CSS retained",
+  "realAiEvaluation": "not run; secret not configured",
+  "oldResourcesDeleted": false,
+  "siteUrl": "https://endurance-canvas.quirkychick26.chatgpt.site",
+  "deploymentId": "appgdep_6aeb56fa93d48191b4a3d14e7a90b26d",
+  "sourceCommit": "111a4463c42fde2c18733051cd471a5437db9ef5",
+  "productionChecks": {
+    "status": 200,
+    "databaseAvailable": true,
+    "creatorStatus": 200,
+    "identityConfigured": true,
+    "serviceRequestSignedIn": false,
+    "guidedGeneration": 200,
+    "unauthenticatedPaidGeneration": 401
+  },
+  "oldFrontendBackupCommit": "3c44420313b337e4983e83a45b24fa4dbebfb934",
+  "oldFrontendDeployment": "dpl_2uHDgi4R3SAK1XcaESZ4rpUUasRu"
+}
