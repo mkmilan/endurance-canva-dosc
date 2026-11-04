@@ -118,7 +118,7 @@ AI Gateway supports API-key authentication from external servers such as Render;
 
 Local backend development binds to localhost. Production binds to `0.0.0.0` and Render's `PORT`; startup requires a service token of at least 32 characters. All `/api` endpoints verify that token, and the Next proxy replaces incoming authorization with its own credential. Vercel's default deployment protection is retained separately from application owner access. Secrets must not use the browser-exposed `NEXT_PUBLIC_` prefix; see [Next.js environment variables](https://nextjs.org/docs/app/guides/environment-variables).
 
-The Render test backend is at [endurance-canva-backend.onrender.com](https://endurance-canva-backend.onrender.com). Current deployment revisions and checks belong in [Progress](04-progress.md). A dedicated Atlas Free cluster now exists in AWS Frankfurt. The database-user creation was refused by the Atlas connector for lack of confirmation, so hosted owner storage is not yet connected.
+The Render test backend is at [endurance-canva-backend.onrender.com](https://endurance-canva-backend.onrender.com). Current deployment revisions and checks belong in [Progress](04-progress.md). A dedicated Atlas Free cluster now exists in AWS Frankfurt. The Atlas connector refused database-user and access-list creation despite Milan's explicit authorization on 2026-11-04, so hosted owner storage is not yet connected. See Activation for the recorded Render CIDRs and manual setup path.
 
 ## 6. Owner sessions and persistent allowances
 

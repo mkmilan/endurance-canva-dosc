@@ -55,7 +55,7 @@ This milestone proves the renderer and contract. Keep it short enough that the c
 - [ ] **M4.3** Add MongoDB for durable drafts and revisions if cross-device saving is needed; document retention, export and recovery behaviour.
 - [ ] **M4.4** Verify save/reopen and AI generation in the hosted environment, including rejection of unauthorised requests, and configure a dedicated Gateway key with an appropriate spend budget.
 
-**Current state:** owner access and persistent attempt allowances passed CI verification, including real MongoDB transactions and browser flows. A dedicated Atlas Free cluster exists, but hosted activation still requires an approved database user, network access configuration, and the AI Gateway credential. Cloud drafts are a separate future task. See [Activation](06-creator-and-ai-activation.md).
+**Current state:** owner access and persistent attempt allowances passed CI verification, including real MongoDB transactions and browser flows. A dedicated Atlas Free cluster exists, but hosted activation still requires provisioning the database user and network access, plus the AI Gateway credential. Milan authorized the database work and supplied the Render CIDRs on 2026-11-04; the Atlas connector still refuses those writes. Cloud drafts are a separate future task. See [Activation](06-creator-and-ai-activation.md).
 
 **Gate:** the owner completes the creation flow; unauthorised callers cannot read drafts, modify lessons or use the paid AI endpoint. Hosting and model choices are recorded before deployment.
 

@@ -1,6 +1,6 @@
 # 06 — Creator and AI activation
 
-Updated **2026-11-03**. This is the operational checklist for the creator-access release. Implementation, fixture verification, hosted connectivity, and real model quality are separate gates. The deployed studio must keep identifying its actual generation method.
+Updated **2026-11-04**. This is the operational checklist for the creator-access release. Implementation, fixture verification, hosted connectivity, and real model quality are separate gates. The deployed studio must keep identifying its actual generation method.
 
 ## Current setup
 
@@ -10,8 +10,8 @@ Updated **2026-11-03**. This is the operational checklist for the creator-access
 | Render backend | Existing free Frankfurt service `srv-dbl0vl6c6qcc73bm1450` |
 | Atlas project | Created `endurance-canvas`, ID `6aea1c1f1c91a0b9011d4027` |
 | Atlas cluster | Created `endurance-canvas`, **Free**, AWS `EU_CENTRAL_1`; inspected MongoDB version 8.0.36 |
-| Database credential | **Not created.** The Atlas connector returned: “User did not confirm the execution of the `atlas-create-db-user` tool so the operation was not performed.” |
-| Database network access | Not configured. Exact current Render outbound CIDRs still need to be read from the service dashboard or authenticated Render API. |
+| Database credential | **Not created.** Milan explicitly authorized it on 2026-11-04. The connector still refused with “User did not confirm the execution of the `atlas-create-db-user` tool so the operation was not performed.” A read-back confirmed zero database users. |
+| Database network access | Milan supplied `74.220.51.0/24` and `74.220.59.0/24` from Render on 2026-11-04. Adding those exact CIDRs was refused by the connector with the same missing-confirmation error. A read-back confirmed zero access-list entries. |
 | Gateway credential | Not accessible in this session. Endurance Canvas Vercel env metadata contains no Gateway key; the official CLI is logged out. Connected MCP access does not authenticate the CLI. |
 | Owner account | Not created; Milan will choose his own email and password using the private setup link after database connection. |
 | Actual model evaluation | **Not run.** Seven prepared cases are in the backend's `test/live-evaluation-cases.json`. |
@@ -24,7 +24,11 @@ Create the app user **`endurance-canvas-app`**, scoped to cluster **`endurance-c
 
 Use the new cluster's SRV connection string, append the `endurance_canvas` database, and retain TLS/default certificate verification. Encode the username/password as URI components. Keep `authSource=admin` and ordinary driver retry/write-majority options as appropriate for the Atlas connection string.
 
-Obtain the service's current outbound ranges from **Render → Endurance Canvas backend → Connect → Outbound**. Allow those CIDRs in the new Atlas project's access list. The connected Render tools do not expose the outbound-IP endpoint, and the dashboard browser was not signed in. The documented API is `GET /v1/services/{serviceId}/outbound-ips` with an authorized Render API credential. Do not reuse the public docs' example CIDR or pre-2025 individual IP lists. [Render outbound IP documentation](https://render.com/docs/outbound-ip-addresses) · [Official endpoint](https://api-docs.render.com/reference/retrieve-service-outbound-ips)
+The Render outbound ranges supplied by Milan on **2026-11-04** are **`74.220.51.0/24`** and **`74.220.59.0/24`**. Add these exact two CIDRs to the new Atlas project's database IP access list. They are recorded here but are **not yet applied**. [Atlas IP access documentation](https://www.mongodb.com/docs/atlas/security/ip-access-list/)
+
+**Connector blocker:** both `atlas-create-access-list` and `atlas-create-db-user` returned “User did not confirm…” after Milan explicitly authorized the work. This is a connector approval failure; further conversational permission is not missing. Do not retry through another tool or broaden access to get around this refusal. Until the connector can accept its own confirmation, the account owner can perform the setup in Atlas directly: open project `endurance-canvas`, add both ranges under **Database & Network Access → IP Access List**, then create the app user under **Database Users**, with the database-specific `readWrite` privilege and cluster restriction described above. Store its connection URI directly in Render. [Atlas database-user documentation](https://www.mongodb.com/docs/atlas/security-add-mongodb-users/)
+
+Read-only verification after both attempts returned zero users and zero IP access-list entries. No database URI was generated, no Render variables were changed, and no redeployment was triggered on 2026-11-04.
 
 The server reuses one MongoDB client. Its small connection pool suits a single Render instance with two simultaneous generations and a single owner. Supported network, server-selection, socket, and pool-wait timeouts bound individual phases; application-owned queries and quota commits also have server-side time limits. Driver 7.8 no longer implements the old client `timeoutMS` option, and its transaction helper can retry for up to 120 seconds. Frontend requests have their own shorter deadline; a disconnected request must not start inference after its session check. A failed initial database connection leaves the public demo available and requires restarting/redeploying the backend after configuration is corrected. Runtime database failure blocks paid work; the app never falls back to an in-memory paid quota.
 
@@ -53,7 +57,11 @@ Password change requires the current password and revokes other sessions. Email 
 
 Use a dedicated Endurance Canvas **AI Gateway API key**. The current Render architecture uses external-server key authentication; a short-lived local Vercel OIDC token is not a permanent Render credential. [Gateway setup](https://vercel.com/docs/ai-gateway/getting-started) · [Key authentication](https://vercel.com/docs/ai-gateway/authentication-and-byok/api-keys)
 
-Create or select that key in the authenticated Vercel dashboard. Enter it directly into Render's secret environment settings as `AI_GATEWAY_API_KEY`. Do not paste it into chat. The current connector has no Gateway-key management operation and cannot silently export its own authentication for CLI use.
+Open the [official AI Gateway API Keys shortcut](https://vercel.com/d?title=AI+Gateway+API+Keys&to=%2F%5Bteam%5D%2F~%2Fai-gateway%2Fapi-keys), choose the Vercel team holding Endurance Canvas, and click **Create key**. Use a recognizable name such as `endurance-canvas-render`. Copy the value immediately; Vercel does not display it again.
+
+Open the [Render backend](https://dashboard.render.com/web/srv-dbl0vl6c6qcc73bm1450), select **Environment → Add Environment Variable**, set the key to `AI_GATEWAY_API_KEY`, and paste the credential directly into its value field. Choose **Save and deploy** to activate the environment change without rebuilding code. Keep `AI_MODE=demo` until database/owner access is verified. [Render environment documentation](https://render.com/docs/configure-environment-variables)
+
+Do not paste credentials into chat. The current connector has no Gateway-key management operation and cannot silently export its own authentication for CLI use.
 
 | Variable | Initial value |
 | --- | --- |

@@ -1,6 +1,6 @@
 # 04 — Progress
 
-Last updated: **2026-11-03**.
+Last updated: **2026-11-04**.
 
 ## Current position
 
@@ -56,7 +56,7 @@ The first demo release passed 18 backend tests, 15 frontend tests, and **11 brow
 
 Render has `AUTH_SECRET`, `STUDIO_ORIGIN`, `MONGODB_DATABASE`, the candidate model `google/gemini-3.5-flash-lite`, and limits of **20 attempts per UTC day / 200 per UTC month** configured. `AI_MODE` remains `demo`. Vercel has `STUDIO_ORIGIN` configured.
 
-The Atlas connector declined database-user creation with “User did not confirm…”. No database user, application connection URI, or network allowlist has been configured. Gateway key management is unavailable through the connected MCP tools, and the CLI/dashboard browser are logged out. **No real model calls or billing changes have occurred.**
+On **2026-11-04**, Milan supplied Render outbound ranges `74.220.51.0/24` and `74.220.59.0/24` and explicitly approved the database work. The connector still refused both access-list and database-user creation with “User did not confirm…”. Read-only checks confirmed zero users and zero access-list entries. No database URI was generated or Render setting changed. Further permission in chat is not missing; the connector confirmation flow remains blocked. Gateway key management is unavailable through the connected MCP tools, and the CLI/dashboard browser are logged out. **No real model calls or billing changes have occurred.**
 
 Follow [06 — Creator and AI activation](06-creator-and-ai-activation.md): connect the isolated database, issue the private owner setup link, verify hosted access, then connect the Gateway key and evaluate the model. The backend's [seven real-model evaluation cases](https://github.com/mkmilan/endurance-canva-backend/blob/main/test/live-evaluation-cases.json) explicitly remain **`not-run`**. Fixture success cannot establish model quality, actual provider cost, or Render-to-Atlas connectivity.
 
